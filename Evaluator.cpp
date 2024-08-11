@@ -88,13 +88,11 @@ namespace Evaluate
 		-50, -30, -30, -30, -30, -30, -30, -50
 	};
 
-	int GetValue(char PieceType, Board::Position pos, bool isWhite)
+	int GetValue(int piece, Board::Position pos, bool isWhite)
 	{
 		int row = pos.row;
 		int col = pos.col;
 		
-		PieceType = tolower(PieceType);
-
 		if (!isWhite)
 		{
 			row = 7 - row;
@@ -102,19 +100,22 @@ namespace Evaluate
 
 		int square = Board::PositionToIndex(row, col);
 
-		switch (PieceType) {
-		case 'p':
+		Board::PieceType type = Board::GetPieceType(piece);
+
+		switch (type) {
+		case Board::PieceType::Pawn:
 			return Pawns[square];
-		case 'r':
+		case Board::PieceType::Rook:
 			return Rooks[square];
-		case 'n':
+		case Board::PieceType::Knight:
 			return Knights[square];
-		case 'b':
+		case Board::PieceType::Bishop:
 			return Bishops[square];
-		case 'q':
+		case Board::PieceType::Queen:
 			return Queens[square];
-		case 'k':
+		case Board::PieceType::King:
 			return KingStart[square];
+
 		default:
 			return 0;
 		}
@@ -153,13 +154,13 @@ namespace Evaluate
 
 		for (Board::Piece& p : board.white_pieces)
 		{
-			const int value = Board::pieceValues.at(p.type);
+			const int value = Board::pieceValues.at(p.piece);
 			score += value;
 		}
 
 		for (Board::Piece& p : board.black_pieces)
 		{
-			const int value = Board::pieceValues.at(p.type);
+			const int value = Board::pieceValues.at(p.piece);
 			score += value;
 		}
 
@@ -171,12 +172,12 @@ namespace Evaluate
 
 		for (Board::Piece& p : board.white_pieces)
 		{
-			score += GetValue(p.type, p.position, true);
+			score += GetValue(p.piece, p.position, true);
 		}
 
 		for (Board::Piece& p : board.black_pieces)
 		{
-			score -= GetValue(p.type, p.position, false);
+			score -= GetValue(p.piece, p.position, false);
 		}
 
 		return score;
@@ -191,7 +192,7 @@ namespace Evaluate
 			alpha = eval;
 
 		for(Board::Move& move : board.whiteTurn ? board.white_moves : board.black_moves) {
-			if (move.captured != ' ')
+			if (move.captured != ' ' && move.piece.piece > 0)
 			{
 				board.move(move, false);
 				int score = -QuiesceEvaluation(board, -beta, -alpha);

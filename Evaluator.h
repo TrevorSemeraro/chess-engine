@@ -15,7 +15,9 @@ namespace Evaluate
 	extern const int Queens[64];
 	extern const int Kings[64];
 
+	int QuiesceEvaluation(Board::Board& board, int alpha, int beta);
 	int evaluateBoard(Board::Board& board);
+
 	int MaterialScore(Board::Board& board);
 	int PieceSquareScore(Board::Board& board);
 }

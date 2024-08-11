@@ -50,7 +50,8 @@ namespace MoveGenerator
 		board.white_moves.clear();
 		for (Board::Piece& p : board.white_pieces)
 		{
-			if (p.type != ' ')
+
+			if (p.piece != Board::PieceType::None)
 			{
 				getPossibleMoves(p, board, board.white_moves);
 			}
@@ -62,7 +63,7 @@ namespace MoveGenerator
         board.black_moves.clear();
         for (Board::Piece& p : board.black_pieces)
         {
-            if (p.type != ' ')
+            if (p.piece != Board::PieceType::None)
             {
                 getPossibleMoves(p, board, board.black_moves);
             }
@@ -82,7 +83,7 @@ namespace MoveGenerator
             {
                 Board::Piece p = whiteTurn ? board.white_pieces[i] : board.black_pieces[i];
 
-                if (p.type != ' ')
+                if (p.piece != Board::PieceType::None)
                     getPossibleMoves(p, board, moves);
             }
         }
@@ -91,7 +92,7 @@ namespace MoveGenerator
             {
                 Board::Piece p = whiteTurn ? board.white_pieces[i] : board.black_pieces[i];
 
-                if (p.type != ' ')
+                if (p.piece != Board::PieceType::None)
                     getPossibleMoves(p, board, moves);
             }
         }
@@ -105,14 +106,13 @@ namespace MoveGenerator
     }
 
     void getPossibleMoves(Board::Piece& piece, Board::Board& board, std::vector<Board::Move>& moves) {
-        piece.checkDirection = Board::MovementDirection::None;
-        char type = tolower(piece.type);
+        piece.checkDirection = Board::Movement::Direction::None;
 
-        bool isKingInCheck = board.isKingInCheck(piece.white);
+        bool isKingInCheck = board.isKingInCheck(piece.isWhite());
 
         // for non-king pieces, we will save the direction in which they are seeing the opposing king
         // when we are in check, loop over opposing pieces, get the pin directions.
-        Board::Piece(*opposingPieces)[16] = piece.white ? &board.black_pieces : &board.white_pieces;
+        Board::Piece(*opposingPieces)[16] = piece.isWhite() ? &board.black_pieces : &board.white_pieces;
 
         int attackers = 0;
         // attackers == 0, there is no check, generate moves as typical
@@ -122,12 +122,12 @@ namespace MoveGenerator
         
         // attackers == 2, there are multiple checks, we can only move king
         Board::Piece* attackingPiece = nullptr;
-        Board::MovementDirection attackingDirection = Board::MovementDirection::None;
+        Board::Movement::Direction attackingDirection = Board::Movement::Direction::None;
 
         for (Board::Piece& opposing : *opposingPieces) {
-            if (opposing.type == ' ') continue;
+            if (opposing.piece == Board::PieceType::None) continue;
 
-            if (opposing.checkDirection != Board::MovementDirection::None) {
+            if (opposing.checkDirection != Board::Movement::Direction::None) {
                 attackers += 1;
                 attackingDirection = opposing.checkDirection;
 
@@ -137,9 +137,11 @@ namespace MoveGenerator
             }
         }
 
+        Board::PieceType pieceType = Board::GetPieceType(piece.piece);
+
         if (attackers == 2) {
             // if we are in check, and there are two attackers, we can only move the king
-			if (type != 'k') {
+			if (pieceType != Board::PieceType::King) {
 				return;
 			}
         }
@@ -149,34 +151,34 @@ namespace MoveGenerator
         //Board::Piece* kingPiece = &board.white_pieces[0];
 
         // if attackingPiece != nullptr then we are in check with a singular piece
-        switch (type) {
-        case 'p':
+        switch (pieceType) {
+        case Board::PieceType::Pawn:
         {
             getPawnMoves(piece, board, moves, attackingPiece);
             break;
         }
-        case 'n':
+        case Board::PieceType::Knight:
         {
             getKnightMoves(piece, board, moves, attackingPiece);
             break;
         }
-        case 'b':
+        case Board::PieceType::Bishop:
         {
             getBishopMoves(piece, board, moves, attackingPiece);
             break;
         }
-        case 'r':
+        case Board::PieceType::Rook:
         {
             getRookMoves(piece, board, moves, attackingPiece);
             break;
         }
-        case 'q':
+        case Board::PieceType::Queen:
         {
             getRookMoves(piece, board, moves, attackingPiece);
             getBishopMoves(piece, board, moves, attackingPiece);
             break;
         }
-        case 'k':
+        case Board::PieceType::King:
         {
             getKingMoves(piece, board, moves, attackingPiece);
             break;
@@ -213,14 +215,14 @@ namespace MoveGenerator
 
                     selfAttackedSquares[position] = true;
 
-                    if (board.board[position] == ' ')
+                    if (board.board[position] == Board::PieceType::None)
                     {
-                        Board::Move move = { piece.type, piece.position, newPosition, false, ' ', ' ', false, Board::Castle::CastleType::None};
+                        Board::Move move = { piece, piece.white, piece.position, newPosition, false, Board::PieceType::None, Board::PieceType::None, false, Board::Castle::CastleType::None};
                         moves.push_back(move);
                     }
                     if (isWhitePiece != piece.white)
                     {
-                        Board::Move move = { piece.type, piece.position, newPosition, true, board.board[position], ' ', false, Board::Castle::CastleType::None };
+                        Board::Move move = { piece, piece.white, piece.position, newPosition, true, board.board[position], Board::PieceType::None, false, Board::Castle::CastleType::None };
                         moves.push_back(move);
                     }
                 }
@@ -238,41 +240,41 @@ namespace MoveGenerator
 
         if (piece.white) {
 
-            bool isKingsideOpen = (board.board[Board::PositionToIndex(row, 5)] == ' ') && (board.board[Board::PositionToIndex(row, 6)] == ' ');
-            bool isQueensideOpen = (board.board[Board::PositionToIndex(row, 1)] == ' ') && (board.board[Board::PositionToIndex(row, 2)] == ' ') && (board.board[Board::PositionToIndex(row, 3)] == ' ');
+            bool isKingsideOpen = (board.board[Board::PositionToIndex(row, 5)] == Board::PieceType::None) && (board.board[Board::PositionToIndex(row, 6)] == Board::PieceType::None);
+            bool isQueensideOpen = (board.board[Board::PositionToIndex(row, 1)] == Board::PieceType::None) && (board.board[Board::PositionToIndex(row, 2)] == Board::PieceType::None) && (board.board[Board::PositionToIndex(row, 3)] == Board::PieceType::None);
 
             if(board.canWhiteCastleKing && isKingsideOpen)
 			{
-                Board::Move move = { piece.type, piece.position, {row, 6}, false, ' ', ' ', false, Board::Castle::CastleType::Kingside };
+                Board::Move move = { piece, piece.white, piece.position, {row, 6}, false, Board::PieceType::None, Board::PieceType::None, false, Board::Castle::CastleType::Kingside };
 				moves.push_back(move);
 			}
 
             if (board.canWhiteCastleQueen && isQueensideOpen)
             {
-                Board::Move move = { piece.type, piece.position, {row, 2}, false, ' ', ' ', false, Board::Castle::CastleType::Queenside };
+                Board::Move move = { piece, piece.white, piece.position, {row, 2}, false, Board::PieceType::None, Board::PieceType::None, false, Board::Castle::CastleType::Queenside };
                 moves.push_back(move);
             }
         }
         else {
-            bool isKingsideOpen = board.board[Board::PositionToIndex(row, 5)] == ' ' && board.board[Board::PositionToIndex(row, 6)] == ' ';
-            bool isQueensideOpen = board.board[Board::PositionToIndex(row, 1)] == ' ' && board.board[Board::PositionToIndex(row, 2)] == ' ' && board.board[Board::PositionToIndex(row, 3)] == ' ';
+            bool isKingsideOpen = board.board[Board::PositionToIndex(row, 5)] == Board::PieceType::None && board.board[Board::PositionToIndex(row, 6)] == Board::PieceType::None;
+            bool isQueensideOpen = board.board[Board::PositionToIndex(row, 1)] == Board::PieceType::None && board.board[Board::PositionToIndex(row, 2)] == Board::PieceType::None && board.board[Board::PositionToIndex(row, 3)] == Board::PieceType::None;
 
             if (board.canBlackCastleKing && isKingsideOpen)
             {
-                Board::Move move = { piece.type, piece.position, {row, 6}, false, ' ', ' ', false, Board::Castle::CastleType::Kingside };
+                Board::Move move = { piece, piece.white, piece.position, {row, 6}, false, Board::PieceType::None, Board::PieceType::None, false, Board::Castle::CastleType::Kingside };
                 moves.push_back(move);
             }
 
             if (board.canBlackCastleQueen && isQueensideOpen)
             {
-                Board::Move move = { piece.type, piece.position, {row, 2}, false, ' ', ' ', false, Board::Castle::CastleType::Queenside };
+                Board::Move move = { piece, piece.white, piece.position, {row, 2}, false, Board::PieceType::None, Board::PieceType::None, false, Board::Castle::CastleType::Queenside };
                 moves.push_back(move);
             }
         }
     }
 
     bool filterCheckMoves(Board::Piece& piece, Board::Board& board, Board::Piece* attacker, Board::Move move) {
-        Board::MovementDirection direction = attacker->checkDirection;
+        Board::Movement::Direction direction = attacker->checkDirection;
         // UP_RIGHT = 1, -1
         int* change = getScalarMovementByMovementDirection(direction);
 
@@ -344,11 +346,11 @@ namespace MoveGenerator
                 bool isWhitePiece = isupper(board.board[position]) > 0;
 
                 bool canCapture = white != isWhitePiece;
-                bool isEmpty = board.board[position] == ' ';
+                bool isEmpty = board.board[position] == Board::PieceType::None;
 
                 if (isEmpty || canCapture)
                 {
-                    Board::Move move = { piece.type, piece.position, newPosition, canCapture, board.board[position] };
+                    Board::Move move = { piece, piece.white, piece.position, newPosition, canCapture, board.board[position] };
                     validMoves.push_back(move);
                 }
             }
@@ -381,32 +383,32 @@ namespace MoveGenerator
         int row = piece.position.row;
         int col = piece.position.col;
 
-        char promotionChar = white ? 'Q' : 'q';
+        Board::PieceType promotionChar = Board::PieceType::Queen;
 
         std::vector<Board::Move> validMoves;
 
         // push
-        if (!piece.isPinned || piece.pinnedDirection == Board::MovementDirection::UP_DOWN) {
+        if (!piece.isPinned || piece.pinnedDirection == Board::Movement::Direction::UP_DOWN) {
             int pawnPush = Board::PositionToIndex(row + pawnDirection, col);
-            if (board.board[pawnPush] == ' ' && row + pawnDirection < 8 && row + pawnDirection >= 0)
+            if (board.board[pawnPush] == Board::PieceType::None && row + pawnDirection < 8 && row + pawnDirection >= 0)
             {
                 if (row + pawnDirection == 0 || row + pawnDirection == 7)
                 {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col, false, ' ', promotionChar };
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col, false, Board::PieceType::None, promotionChar };
                     validMoves.push_back(move);
                 }
                 else
                 {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col };
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col };
                     validMoves.push_back(move);
                 }
             }
 
             // double push, if non obstructed
             int pawnDoublePush = Board::PositionToIndex(row + pawnDirection * 2, col);
-            if (row == pawnHome && board.board[pawnDoublePush] == ' ' && board.board[pawnPush] == ' ')
+            if (row == pawnHome && board.board[pawnDoublePush] == Board::PieceType::None && board.board[pawnPush] == Board::PieceType::None)
             {
-                Board::Move move = { piece.type, row, col, row + pawnDirection * 2, col };
+                Board::Move move = { piece, row, col, row + pawnDirection * 2, col };
                 validMoves.push_back(move);
             }
         }
@@ -424,8 +426,8 @@ namespace MoveGenerator
             char capturedLeft = board.board[CaptureLeft];
             char capturedRight = board.board[CaptureRight];
 
-            bool canCaptureLeft = capturedLeft != ' ' && white != isupper(capturedLeft) > 0;
-            bool canCaptureRight = capturedRight != ' ' && white != isupper(capturedRight) > 0;
+            bool canCaptureLeft = capturedLeft != Board::PieceType::None && white != isupper(capturedLeft) > 0;
+            bool canCaptureRight = capturedRight != Board::PieceType::None && white != isupper(capturedRight) > 0;
 
             char opposingKing = white ? 'k' : 'K';
 
@@ -439,11 +441,11 @@ namespace MoveGenerator
 
                 if (row + pawnDirection == 0 || row + pawnDirection == 7)
                 {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col + 1, true, board.board[CaptureRight], promotionChar };
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col + 1, true, board.board[CaptureRight], promotionChar };
                     validMoves.push_back(move);
                 }
                 else {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col + 1, true, board.board[CaptureRight]};
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col + 1, true, board.board[CaptureRight]};
                     validMoves.push_back(move);
                 }
             }
@@ -451,11 +453,11 @@ namespace MoveGenerator
             {
                 if (row + pawnDirection == 0 || row + pawnDirection == 7)
                 {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col - 1, true, board.board[CaptureLeft], promotionChar };
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col - 1, true, board.board[CaptureLeft], promotionChar };
                     validMoves.push_back(move);
                 }
                 else {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col - 1, true, board.board[CaptureLeft] };
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col - 1, true, board.board[CaptureLeft] };
                     validMoves.push_back(move);
                 }
             }
@@ -465,9 +467,12 @@ namespace MoveGenerator
         if (!piece.isPinned && board.moves.size() > 0)
         {
             Board::Move lastMove = board.moves.back();
-            char lastPiece = tolower(lastMove.piece);
+            Board::Piece lastMovePiece = lastMove.piece;
+
+            int lastPieceValue = lastMove.piece.piece;
+            Board::PieceType lastPiece = Board::GetPieceType(lastPieceValue);
             
-            bool lastMovePawn = lastPiece == 'p';
+            bool lastMovePawn = lastPiece == Board::PieceType::Pawn;
 
             bool lastMoveDoublePush = abs(lastMove.initalPosition.row - lastMove.finalPosition.row) == 2;
 
@@ -480,12 +485,12 @@ namespace MoveGenerator
             {
                 if (col > movecol)
                 {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col - 1, true, 'p', ' ', true};
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col - 1, true, Board::PieceType::Pawn, Board::PieceType::None, true};
                     validMoves.push_back(move);
                 }
                 else
                 {
-                    Board::Move move = { piece.type, row, col, row + pawnDirection, col + 1, true, 'p', ' ', true };
+                    Board::Move move = { piece, white, row, col, row + pawnDirection, col + 1, true, Board::PieceType::Pawn, Board::PieceType::None, true };
                     validMoves.push_back(move);
                 }
             }
@@ -517,8 +522,8 @@ namespace MoveGenerator
 
         // pinned in direction we cannot move.
         if(piece.isPinned){
-            if (piece.pinnedDirection == Board::MovementDirection::UP_DOWN ||
-                piece.pinnedDirection == Board::MovementDirection::LEFT_RIGHT){
+            if (piece.pinnedDirection == Board::Movement::Direction::UP_DOWN ||
+                piece.pinnedDirection == Board::Movement::Direction::LEFT_RIGHT){
                 return;
             }
         }
@@ -533,23 +538,23 @@ namespace MoveGenerator
             int piecesSeen = 0;
             Board::Piece* seenPiece = nullptr;
 
-            Board::MovementDirection direction = Board::MovementDirection::None;
+            Board::Movement::Direction direction = Board::Movement::Direction::None;
 
             // convert the direction to a pin direction
             if (rowInc == 1) {
 				if (colInc == 1) {
-					direction = Board::MovementDirection::UP_LEFT_DOWN_RIGHT;
+					direction = Board::Movement::Direction::UP_LEFT_DOWN_RIGHT;
 				}
 				else {
-					direction = Board::MovementDirection::UP_RIGHT_DOWN_LEFT;
+					direction = Board::Movement::Direction::UP_RIGHT_DOWN_LEFT;
 				}
 			}
 			else {
 				if (colInc == 1) {
-					direction = Board::MovementDirection::UP_RIGHT_DOWN_LEFT;
+					direction = Board::Movement::Direction::UP_RIGHT_DOWN_LEFT;
 				}
 				else {
-					direction = Board::MovementDirection::UP_LEFT_DOWN_RIGHT;
+					direction = Board::Movement::Direction::UP_LEFT_DOWN_RIGHT;
 				}
 			}
 
@@ -568,16 +573,18 @@ namespace MoveGenerator
                 Board::Position newPosition = { x, y };
                 int newPositionIndex = Board::PositionToIndex(newPosition);
 
+                Board::PieceType seenPieceType = Board::GetPieceType(seenPiece->piece);
+
                 // if we haven't seen a piece, or we have seen a king, we will mark the square as attacked
-                if (seenPiece == nullptr || tolower(seenPiece->type) == 'k') {
+                if (seenPiece == nullptr || seenPieceType == Board::PieceType::King) {
                     attackedSquares[newPositionIndex] = true;
                 }
 
-                if (board.board[newPositionIndex] != ' ')
+                if (board.board[newPositionIndex] != Board::PieceType::None)
                 {
                     try {
                         Board::Piece& current = board.getPieceAtPosition(newPosition);
-                        bool isCurrentKing = current.type == (piece.white ? 'k' : 'K');
+                        bool isCurrentKing = current.piece == (piece.white ? Board::BlackKing : Board::WhiteKing);
 
                         // "xray" to check if a piece is pinned to king, and also prevent king from moving into check
                         if (isCurrentKing) {
@@ -611,7 +618,7 @@ namespace MoveGenerator
                         if (white != isWhitePiece)
                         {
                             // check if piece is king
-                            Board::Move move = { piece.type, piece.position, newPosition, true, board.board[newPositionIndex] };
+                            Board::Move move = { piece, piece.white, piece.position, newPosition, true, board.board[newPositionIndex] };
                             validMoves.push_back(move);
                         }
                     }
@@ -625,7 +632,7 @@ namespace MoveGenerator
                 else {
                     // we can only move there if there isn't a piece in the way
                     if (piecesSeen == 0) {
-                        Board::Move move = { piece.type, piece.position, newPosition };
+                        Board::Move move = { piece, piece.white, piece.position, newPosition };
                         validMoves.push_back(move);
                     }
                 }
@@ -656,8 +663,8 @@ namespace MoveGenerator
         int col = piece.position.col;
 
         if (piece.isPinned) {
-            if (piece.pinnedDirection == Board::MovementDirection::UP_RIGHT_DOWN_LEFT ||
-                piece.pinnedDirection == Board::MovementDirection::UP_LEFT_DOWN_RIGHT){
+            if (piece.pinnedDirection == Board::Movement::Direction::UP_RIGHT_DOWN_LEFT ||
+                piece.pinnedDirection == Board::Movement::Direction::UP_LEFT_DOWN_RIGHT){
                 return;
             }
         }
@@ -672,14 +679,14 @@ namespace MoveGenerator
             int piecesSeen = 0;
             Board::Piece* seenPiece = nullptr;
 
-            Board::MovementDirection moveDirection = Board::MovementDirection::None;
+            Board::Movement::Direction moveDirection = Board::Movement::Direction::None;
 
             // convert the direction to a pin direction
             if (yinc == 1 || yinc == -1) {
-                moveDirection = Board::MovementDirection::LEFT_RIGHT;
+                moveDirection = Board::Movement::Direction::LEFT_RIGHT;
             }
             if(xinc == 1 || xinc == -1){
-                moveDirection = Board::MovementDirection::UP_DOWN;
+                moveDirection = Board::Movement::Direction::UP_DOWN;
             }
 
             // if the piece is pinned, and we are NOT pinned in the current scoping direction, return
@@ -699,15 +706,18 @@ namespace MoveGenerator
                 Board::Position newPosition = { x, y };
                 int newPositionIndex = Board::PositionToIndex(newPosition);
 
+                Board::PieceType seenPieceType = Board::GetPieceType(seenPiece->piece);
+
                 // if we haven't seen a piece, or we have seen a king, we will mark the square as attacked
-                if (seenPiece == nullptr || tolower(seenPiece->type) == 'k') {
+                if (seenPiece == nullptr || seenPieceType == Board::PieceType::King) {
                     attackedSquares[newPositionIndex] = true;
                 }
 
-                if (board.board[newPositionIndex] != ' ')
+                if (board.board[newPositionIndex] != Board::PieceType::None)
                 {
 				    Board::Piece& current = board.getPieceAtPosition(newPosition);
-                    bool isCurrentKing = current.type == (piece.white ? 'k' : 'K');
+
+                    bool isCurrentKing = current.piece == (piece.white ? Board::BlackKing : Board::WhiteKing);
                     
                     // "xray" to check if a piece is pinned to king, and also prevent king from moving into check
                     if (isCurrentKing) {
@@ -742,14 +752,14 @@ namespace MoveGenerator
                     if (white != isWhitePiece)
                     {
                         // check if piece is king
-                        Board::Move move = { piece.type, piece.position, newPosition, true, board.board[newPositionIndex] };
+                        Board::Move move = { piece, piece.white, piece.position, newPosition, true, board.board[newPositionIndex] };
                         validMoves.push_back(move);
                     }
                 }
                 else {
                     // we can only move there if there isn't a piece in the way
                     if (piecesSeen == 0) {
-                        Board::Move move = { piece.type, piece.position, newPosition };
+                        Board::Move move = { piece, piece.white, piece.position, newPosition };
                         validMoves.push_back(move);
                     }
                 }

@@ -37,11 +37,13 @@ namespace Board
         int initalposition = PositionToIndex(move.initalPosition.row, move.initalPosition.col);
         int finalposition = PositionToIndex(move.finalPosition.row, move.finalPosition.col);
 
-        char piece = move.piece;
-        char pieceType = tolower(piece);
-        bool isWhitePiece = isupper(move.piece) > 0;
+        Piece piece = move.piece;
 
-        this->board[initalposition] = ' ';
+        PieceType type = GetPieceType(piece.piece);
+
+        bool isWhitePiece = move.isWhite;
+
+        this->board[initalposition] = PieceType::None;
 
         Piece(*currentPieces)[16] = isWhitePiece ? &this->white_pieces : &this->black_pieces;
         Piece(*opposingPieces)[16] = isWhitePiece ? &this->black_pieces : &this->white_pieces;
@@ -78,27 +80,29 @@ namespace Board
             this->handleCastle(move, currentPieces, isWhitePiece, print);
         }
         else {
-            this->board[finalposition] = piece;
+            this->board[finalposition] = piece.piece;
         }
 
         if (isPromoting) {
             this->handlePromotion(move, currentPieces, currentPieceIndex, isWhitePiece, print);
         }
         else {
-            this->board[finalposition] = piece;
+            this->board[finalposition] = piece.piece;
         }
 
-        if (pieceType == 'k') {
-            Position kingPositionChange = getScalarPositionChange(move.initalPosition, move.finalPosition);
+        
+        
+        if (type == PieceType::King) {
+            Position kingPositionChange = Movement::getScalarPositionChange(move.initalPosition, move.finalPosition);
 
-            MovementDirection kingMovement = getDirection(kingPositionChange);
+            Movement::Direction kingMovement = Movement::getDirection(kingPositionChange);
 
             //std::cout << "King Movement: " << kingMovement << std::endl;
 
             // for all pieces, if there is a pin, get the pin direction
             for (Piece& opposingPiece : *opposingPieces) {
 
-                if (opposingPiece.type == ' ') continue;
+                if (opposingPiece.piece == PieceType::None) continue;
 
                 // if the pin does not follow the movement of the king
                 bool pinFollowKing = opposingPiece.pinningDirection == kingMovement;
@@ -111,27 +115,27 @@ namespace Board
                         //std::cout << "Removing pin on " << opposingPiece.pinningPiece->type << std::endl;
                         
                         opposingPiece.pinningPiece->isPinned = false;
-                        opposingPiece.pinningPiece->pinnedDirection = MovementDirection::None;
+                        opposingPiece.pinningPiece->pinnedDirection = Movement::Direction::None;
 
                         opposingPiece.pinningPiece = nullptr;
-                        opposingPiece.pinningDirection = MovementDirection::None;
+                        opposingPiece.pinningDirection = Movement::Direction::None;
                     }
                 }
             }
         }
 
         if (currentPiece->pinningPiece != nullptr) {
-            Position positionChange = getScalarPositionChange(move.initalPosition, move.finalPosition);
-            MovementDirection moveDirection = getDirection(positionChange);
+            Position positionChange = Movement::getScalarPositionChange(move.initalPosition, move.finalPosition);
+            Movement::Direction moveDirection = Movement::getDirection(positionChange);
 
-            MovementDirection pinningDirection = currentPiece->pinningDirection;
+            Movement::Direction pinningDirection = currentPiece->pinningDirection;
 
             if (moveDirection != pinningDirection) {
                 currentPiece->pinningPiece->isPinned = false;
-                currentPiece->pinningPiece->pinnedDirection = MovementDirection::None;
+                currentPiece->pinningPiece->pinnedDirection = Movement::Direction::None;
 
                 currentPiece->pinningPiece = nullptr;
-                currentPiece->pinningDirection = MovementDirection::None;
+                currentPiece->pinningDirection = Movement::Direction::None;
             }
             else {
                 //std::cout << "Could NOT remove pin on " << currentPiece->pinningPiece->type << std::endl;
@@ -141,16 +145,16 @@ namespace Board
         // update the check direction for all opposing pieces
         // since we moved, we cannot be in check anymore
         for (Piece& p : *opposingPieces) {
-			p.checkDirection = MovementDirection::None;
+			p.checkDirection = Movement::Direction::None;
 		}
 
         this->flipTimer();
 
         try{
-            if(print)
-                std::cout << "There are " << this->moves.size() << " moves" << std::endl;
-
             this->moves.push_back(move);
+
+            if(print)
+                std::cout << "There have been " << this->moves.size() << " moves" << std::endl;
         }
         catch (...) {
             std::cout << "Error" << std::endl;
@@ -206,13 +210,16 @@ namespace Board
         bool undoPromotion = move.promotion != ' ';
         bool undoCapture = capturedPieceIndex != -1;
         bool undoCastle = move.castle != Castle::CastleType::None;
-        bool isWhitePiece = isupper(move.piece) > 0;
-
+        
+        bool isWhitePiece = move.isWhite;
+        
+        Piece p = move.piece;
+        PieceType piece = GetPieceType(p.piece);
+        
         Piece capturedPiece = capturedPieces.back();
         capturedPieces.pop_back();
 
-        char piece = move.piece;
-        bool isKingMovement = tolower(piece) == 'k';
+        bool isKingMovement = piece == PieceType::King;
 
         Piece(*currentPieces)[16] = this->whiteTurn ? &this->white_pieces : &this->black_pieces;
         
@@ -226,7 +233,7 @@ namespace Board
         }
 
         this->board[movedFrom] = piece;
-        this->board[movedTo] = ' ';
+        this->board[movedTo] = PieceType::None;
 
         if (undoCastle) {
             uint8_t castleRow = isWhitePiece ? 7 : 0;
@@ -248,11 +255,9 @@ namespace Board
 
             for (Piece& p : *currentPieces)
             {
-                char type = tolower(p.type);
-
-                if (type == 'r' && p.position == finalRookPosition) {
-                    this->board[PositionToIndex(finalRookPosition)] = ' ';
-                    this->board[PositionToIndex(startingRookPosition)] = isWhitePiece ? 'R' : 'r';
+                if (piece == PieceType::Rook && p.position == finalRookPosition) {
+                    this->board[PositionToIndex(finalRookPosition)] = PieceType::None;
+                    this->board[PositionToIndex(startingRookPosition)] = PieceType::Rook;
                     p.position = startingRookPosition;
                 }
             }
@@ -332,14 +337,16 @@ namespace Board
 
         for (Piece& p : *currentPieces)
         {
-            char type = tolower(p.type);
+            PieceType type = GetPieceType(p.piece);
 
             if (type == 'k') {
                 p.position = kingPosition;
             }
             if (type == 'r' && p.position == startingRookPosition) {
-                this->board[PositionToIndex(startingRookPosition)] = ' ';
-                this->board[PositionToIndex(rookPosition)] = isWhitePiece ? 'R' : 'r';
+                this->board[PositionToIndex(startingRookPosition)] = PieceType::None;
+                //this->board[PositionToIndex(rookPosition)] = isWhitePiece ? 'R' : 'r';
+                this->board[PositionToIndex(rookPosition)] = PieceType::Rook;
+                
                 p.position = rookPosition;
             }
         }
@@ -363,10 +370,12 @@ namespace Board
     void Board::handlePromotion(Move& move, Piece(*currentPieces)[16], int currentPieceIndex, bool isWhitePiece, bool print) {
         int pawnFinalRow = isWhitePiece ? 0 : 7;
         
-        if (tolower(move.piece) == 'p' && move.finalPosition.row == pawnFinalRow)
+        PieceType piece = GetPieceType(move.piece.piece);
+        
+        if (piece == PieceType::Pawn && move.finalPosition.row == pawnFinalRow)
         {
             if (currentPieceIndex > 0 && currentPieceIndex < 16) {
-                currentPieces[currentPieceIndex]->type = move.promotion;
+                currentPieces[currentPieceIndex]->piece = move.promotion | move.isWhite;
             }
 
             if (print) {
@@ -386,7 +395,7 @@ namespace Board
 
             capturePosition = { enpassantRow, move.finalPosition.col };
 
-            this->board[PositionToIndex(capturePosition)] = ' ';
+            this->board[PositionToIndex(capturePosition)] = PieceType::None;
         }
 
         // we are going to capture (remove) any opposing piece on the final positions square
@@ -400,7 +409,7 @@ namespace Board
 
                 capturedPieces.push_back(opposingPiece);
 
-                opposingPiece.type = ' ';
+                opposingPiece.piece = PieceType::None;
                 opposingPiece.position = { 0, 0 };
 
                 break;
@@ -469,7 +478,7 @@ namespace Board
                     for (int i = 0; i < diff; i++)
                     {
                         int position = PositionToIndex(row, col);
-                        board[position] = ' ';
+                        board[position] = PieceType::None;
                         col++;
                     }
                 }
@@ -477,7 +486,10 @@ namespace Board
                 {
                     bool isWhitePiece = isupper(c) > 0;
                     Position pos = { row, col };
-                    Piece* current = new Piece(pos, c, isWhitePiece);
+
+                    PieceType piece = charToPieceType(c);
+
+                    Piece* current = new Piece(pos, piece, isWhitePiece);
                 
                     if (isWhitePiece)
                     {
@@ -499,7 +511,7 @@ namespace Board
                     }
 
                     int position = PositionToIndex(row, col);
-                    board[position] = c;
+                    board[position] = current->piece;
 
                     col++;
                 }
@@ -507,12 +519,12 @@ namespace Board
         }
 
         while (whitePieceIndex < 16) {
-            Piece* current = new Piece({0, 0}, ' ', true);
+            Piece* current = new Piece({0, 0}, PieceType::None, true);
             this->white_pieces[whitePieceIndex++] = *current;
         }
 
         while (blackPieceIndex < 16) {
-            Piece* current = new Piece({ 0, 0 }, ' ', false);
+            Piece* current = new Piece({ 0, 0 }, PieceType::None, false);
             this->black_pieces[blackPieceIndex++] = *current;
         }
 
@@ -560,16 +572,19 @@ namespace Board
                 // if its white turn, the possible enpassant came from black on row 7 (6),
                 // if its black turn, the possible enpassant came from white on row 2 (1)
                 int inital = this->whiteTurn ? 6 : 1;
-                char piecetype = this->whiteTurn ? 'p' : 'P';
                 Position pos = { inital, file - 'a' };
 
-                Move m = { piecetype, inital, file - 'a', rank - '0', file - 'a' };
+                Piece piece = { pos, PieceType::Pawn, this->whiteTurn };
+
+                Move m = { piece, this->whiteTurn, inital, file - 'a', rank - '0', file - 'a' };
 
                 this->moves.push_back(m);
             }
         }
 
         //std::cout << "Loaded board state" << std::endl;
+
+        this->print();
 
         MoveGenerator::updateAttackedSquaresAndPossibleMoves(*this);
         this->currentEvaluation = Evaluate::evaluateBoard(*this);
@@ -592,16 +607,16 @@ namespace Board
         std::cout << "White Pieces" << std::endl;
         for (const Piece &p : this->white_pieces)
         {
-            if (p.type == ' ') continue;
-            std::cout << p.type << " ";
+            if (GetPieceType(p.piece) == PieceType::None) continue;
+            std::cout << GetPieceType(p.piece) << " ";
         }
 
         std::cout << std::endl << "====================" << std::endl;
         std::cout << "Black Pieces" << std::endl;
         for (const Piece &p : this->black_pieces)
         {
-            if (p.type == ' ') continue;
-            std::cout << p.type << " ";
+            if (GetPieceType(p.piece) == PieceType::None) continue;
+            std::cout << GetPieceType(p.piece) << " ";
         }
         std::cout << std::endl << "====================" << std::endl;
 
@@ -612,7 +627,7 @@ namespace Board
         if (isWhite) {
             for (Piece &p : this->white_pieces)
 			{
-				if (p.type == 'K') {
+				if (GetPieceType(p.piece) == PieceType::King) {
 					if (this->black_attacked_squares[PositionToIndex(p.position)])
 					{
 						return true;
@@ -623,7 +638,7 @@ namespace Board
 		else {
 			for (Piece &p : this->black_pieces)
 			{
-				if (p.type == 'k') {
+				if (GetPieceType(p.piece) == PieceType::King) {
 					if (this->white_attacked_squares[PositionToIndex(p.position)])
 					{
 						return true;

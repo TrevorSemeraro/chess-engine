@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Position.h"
+#include "Piece.h"
 
 namespace Board
 {
@@ -17,22 +18,20 @@ namespace Board
         };
     }
 
-
     struct Move {
-        char piece;
+        Piece piece;
+        bool isWhite;
         
         Position initalPosition;
         Position finalPosition;
 
         bool willCapture = false;
 
-        char captured = ' ';
-
-        char promotion = ' ';
+        int captured = PieceType::None;
+        PieceType promotion = PieceType::None;
 
         bool enPassant = false;
 
-        // 0 = no castle, 1 = kingside castle, 2 = queenside castle
         Castle::CastleType castle = Castle::CastleType::None;
     };
     void printMove(Move move);

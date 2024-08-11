@@ -14,7 +14,7 @@ namespace Board
         char initial_file = move.initalPosition.col + 'a';
         char final_file = move.finalPosition.col + 'a';
 
-        std::cout << move.piece << ": " << initial_file << initial_rank << " to " << final_file << final_rank << std::endl;
+        std::cout << move.piece.piece << ": " << initial_file << initial_rank << " to " << final_file << final_rank << std::endl;
 
         if (move.willCapture) {
             std::cout << "Capturing: " << move.captured << std::endl;

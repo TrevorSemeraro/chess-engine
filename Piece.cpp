@@ -5,80 +5,66 @@
 
 namespace Board
 {
-	int* getScalarMovementByMovementDirection(MovementDirection direction) {
-		switch (direction) {
-		case UP_DOWN:
-			return new int[2] { 1, 0 };
-		case LEFT_RIGHT:
-			return new int[2] { 0, 1 };
-		case UP_LEFT_DOWN_RIGHT:
-			return new int[2] { 1, 1 };
-		case UP_RIGHT_DOWN_LEFT:
-			return new int[2] { 1, -1 };
-		case KNIGHT:
-			// there is no scalar movement for knight
-			return new int[2] { 0, 0 };
-		default:
-			return new int[2] { 0, 0 };
-		}
-	}
+	const std::unordered_map<int, int> pieceValues = {
+		{WhitePawn, PAWN_VALUE},
+		{WhiteRook, ROOK_VALUE},
+		{WhiteKnight, KNIGHT_VALUE},
+		{WhiteBishop, BISHOP_VALUE},
+		{WhiteQueen, QUEEN_VALUE},
+		{WhiteKing, KING_VALUE},
 
-	Position getScalarPositionChange(Position start, Position end) {
-		// xf - xi, yf - yi divided by positive self
-		// 5, -5 => 5/5, -5/5 => 1, -1
-		int xDiff = end.col - start.col;
-		int yDiff = end.row - start.row;
+		{BlackPawn, -PAWN_VALUE},
+		{BlackRook, -ROOK_VALUE},
+		{BlackKnight, -KNIGHT_VALUE},
+		{BlackBishop, -BISHOP_VALUE},
+		{BlackQueen, -QUEEN_VALUE},
+		{BlackKing, -KING_VALUE},
 
-		xDiff = xDiff == 0 ? 0 : xDiff / abs(xDiff);
-		yDiff = yDiff == 0 ? 0 : yDiff / abs(yDiff);
-
-		Position change = { yDiff, xDiff };
-		return change;
-	}
-
-	MovementDirection getDirection(Position change) {
-		if (change.row == 0 && change.col == 0) {
-			return None;
-		}
-		if (change.row == 0) {
-			return LEFT_RIGHT;
-		}
-		if (change.col == 0) {
-			return UP_DOWN;
-		}
-		if (change.row == change.col) {
-			return UP_LEFT_DOWN_RIGHT;
-		}
-		if (change.row == -change.col) {
-			return UP_RIGHT_DOWN_LEFT;
-		}
-		return None;
-	}
-
-	const std::unordered_map<char, int> pieceValues = {
-		{'P', PAWN_VALUE},
-		{'R', ROOK_VALUE},
-		{'N', KNIGHT_VALUE},
-		{'B', BISHOP_VALUE},
-		{'Q', QUEEN_VALUE},
-		{'K', KING_VALUE},
-		{'p', -PAWN_VALUE},
-		{'r', -ROOK_VALUE},
-		{'n', -KNIGHT_VALUE},
-		{'b', -BISHOP_VALUE},
-		{'q', -QUEEN_VALUE},
-		{'k', -KING_VALUE},
-		{' ', 0}
+		{0, 0}
 	};
 
 	Piece::Piece() {
-		this->position = { 0, 0 };
-		this->type = ' ';
-		this->white = false;
+		Piece({0, 0}, PieceType::None, PieceColour::White);
 	}
-	Piece::Piece(Position pos, char type, bool white) {
+
+	Piece::Piece(Position pos, PieceType type, PieceColour white) {
 		this->position = pos;
-		this->type = type;
-		this->white = white;
+		this->piece = type | white;
+		this->white = white == PieceColour::White;
+	}
+
+	int CreatePiece(int pieceType, int pieceColour) {
+		return pieceType | pieceColour;
+	}
+
+	int CreatePiece(int pieceType, bool isWhite) {
+		return CreatePiece(pieceType, isWhite ? PieceColour::White : PieceColour::Black);
+	}
+
+	PieceColour GetPieceColour(int piece) {
+		return static_cast<PieceColour>(piece & colourMask);
+	}
+
+	PieceType GetPieceType(int piece) {
+		return static_cast<PieceType>(piece & typeMask);
+	}
+
+	PieceType charToPieceType(char c) {
+		switch (tolower(c)) {
+		case 'p':
+			return PieceType::Pawn;
+		case 'r':
+			return PieceType::Rook;
+		case 'n':
+			return PieceType::Knight;
+		case 'b':
+			return PieceType::Bishop;
+		case 'q':
+			return PieceType::Queen;
+		case 'k':
+			return PieceType::King;
+		default:
+			return PieceType::None;
+		}
 	}
 }

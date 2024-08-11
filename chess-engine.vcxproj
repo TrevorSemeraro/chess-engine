@@ -145,6 +145,7 @@
     <ClInclude Include="minimax.h" />
     <ClInclude Include="Move.h" />
     <ClInclude Include="generator.h" />
+    <ClInclude Include="movement.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Piece.h" />
     <ClInclude Include="Position.h" />
@@ -158,6 +159,7 @@
     <ClCompile Include="minimax.cpp" />
     <ClCompile Include="Move.cpp" />
     <ClCompile Include="generator.cpp" />
+    <ClCompile Include="movement.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

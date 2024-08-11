@@ -9,6 +9,7 @@
 #include "Position.h"
 #include "Move.h"
 #include "board.h"
+#include "movement.h"
 
 namespace Board
 {
@@ -19,58 +20,89 @@ namespace Board
     const static int QUEEN_VALUE = 1025;
     const static int KING_VALUE = 40000;
 
-    const enum PieceIndex {
-        WHITE_PAWN = 0,
-        WHITE_ROOK,
-        WHITE_KNIGHT,
-        WHITE_BISHOP,
-        WHITE_QUEEN,
-        WHITE_KING,
-        BLACK_PAWN,
-        BLACK_ROOK,
-        BLACK_KNIGHT,
-        BLACK_BISHOP,
-        BLACK_QUEEN,
-        BLACK_KING = 11,
+    // Piece Types
+    const enum PieceType : int {
+        None = 0,
+        Pawn = 1,
+        Knight = 2,
+        Bishop = 3,
+        Rook = 4,
+        Queen = 5,
+        King = 6,
     };
 
-    enum MovementDirection {
-        None = 0,
-		UP_DOWN = 1,
-		LEFT_RIGHT = 2,
-		UP_LEFT_DOWN_RIGHT = 3,
-		UP_RIGHT_DOWN_LEFT = 4,
-        KNIGHT = 5,
+    // Piece Colours
+    const enum PieceColour : int {
+		White = 0,
+		Black = 8,
 	};
 
-    int* getScalarMovementByMovementDirection(MovementDirection direction);
+    const int WhitePawn = Pawn | White; // 1
+    const int WhiteKnight = Knight | White; // 2
+    const int WhiteBishop = Bishop | White; // 3
+    const int WhiteRook = Rook | White; // 4
+    const int WhiteQueen = Queen | White; // 5
+    const int WhiteKing = King | White; // 6
 
-    Position getScalarPositionChange(Position start, Position end);
-    MovementDirection getDirection(Position change);
+    const int BlackPawn = Pawn | Black; // 9
+    const int BlackKnight = Knight | Black; // 10
+    const int BlackBishop = Bishop | Black; // 11
+    const int BlackRook = Rook | Black; // 12
+    const int BlackQueen = Queen | Black; // 13
+    const int BlackKing = King | Black; // 14
+
+    const int MaxPieceIndex = BlackKing;
+
+    static int PieceIndices[] = {
+        WhitePawn, WhiteKnight, WhiteBishop, WhiteRook, WhiteQueen, WhiteKing,
+        BlackPawn, BlackKnight, BlackBishop, BlackRook, BlackQueen, BlackKing
+    };
+
+    // Bit Masks
+    const int typeMask = 0b0111;
+    const int colourMask = 0b1000;
 
     class Piece {
     public:
-        char type;
+        int piece;
         bool white;
 
         Position position;
 
-        MovementDirection checkDirection = MovementDirection::None;
+        Movement::Direction checkDirection = Movement::Direction::None;
 
-        MovementDirection pinningDirection = MovementDirection::None;
+        Movement::Direction pinningDirection = Movement::Direction::None;
         Piece* pinningPiece = nullptr;
         Piece* pinnedBy = nullptr;
         
         bool isPinned = false;
-        MovementDirection pinnedDirection = MovementDirection::None;
+        Movement::Direction pinnedDirection = Movement::Direction::None;
 
         //std::vector<Move> moves;
 
         Piece();
-        Piece(Position pos, char type, bool white);
-    };
+        Piece(Position pos, PieceType pieceType, PieceColour white);
 
-    extern const std::unordered_map<char, int> pieceValues;
+        Piece(Position pos, PieceType pieceType, bool white) {
+            Piece(pos, pieceType, white ? PieceColour::White : PieceColour::Black);
+        }
+    
+        bool isWhite() {
+            return (piece & colourMask) == White && piece != 0;
+        }
+     };
+
+    int CreatePiece(int pieceType, int pieceColour);
+
+    int CreatePiece(int pieceType, bool isWhite);
+
+    PieceColour GetPieceColour(int piece);
+
+    PieceType GetPieceType(int piece);
+
+    extern const std::unordered_map<int, int> pieceValues;
+
+    PieceType charToPieceType(char c);
 }
 
 

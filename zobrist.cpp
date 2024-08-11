@@ -71,26 +71,6 @@ namespace Board
 			return state;
 		}
 
-		int pieceToInt(char piece) {
-			switch (tolower(piece)) {
-			case 'p':
-				return 0;
-			case 'n':
-				return 1;
-			case 'b':
-				return 2;
-				break;
-			case 'r':
-				return 3;
-			case 'q':
-				return 4;
-			case 'k':
-				return 5;
-			default:
-				return 0;
-			}
-		}
-
 		uint64_t generateHash(Board& b) {
 			uint64_t key = 0;
 
@@ -116,10 +96,12 @@ namespace Board
 			{
 				if (b.board[i] != ' ')
 				{
-					char piece = b.board[i];
-					bool isWhite = isupper(piece) > 0;
+					int pieceValue = b.board[i];
+					
+					bool isWhite = GetPieceColour(pieceValue);
 					int color = isWhite ? 1 : 0;
-					int pieceIndex = pieceToInt(piece);
+
+					int pieceIndex = GetPieceType(pieceValue);
 
 					key ^= pieceKeys[color][pieceIndex][i];
 				}
@@ -133,25 +115,24 @@ namespace Board
 			int initalposition = PositionToIndex(move.initalPosition.row, move.initalPosition.col);
 			int finalposition = PositionToIndex(move.finalPosition.row, move.finalPosition.col);
 
-			char piece = move.piece;
-			char pieceType = tolower(piece);
-			int pieceIndex = pieceToInt(piece);
-
-			bool isWhitePiece = isupper(move.piece) > 0;
+			Piece piece = move.piece;
+			PieceType pieceType = GetPieceType(piece.piece);
+			
+			bool isWhitePiece = move.piece.white;
 
 			uint64_t inital = board.zobristKey;
 
 			//this->board[initalposition] = ' ';
 			int color = isWhitePiece ? 1 : 0;
-			inital ^= pieceKeys[color][pieceIndex][initalposition]; // xor out the old position
+			inital ^= pieceKeys[color][pieceType][initalposition]; // xor out the old position
 
 			// xor in the new position
-			inital ^= pieceKeys[color][pieceIndex][finalposition];
+			inital ^= pieceKeys[color][pieceType][finalposition];
 
 			// xor out any captures
 			if (move.willCapture) {
 				color = isupper(move.captured) > 0 ? 1 : 0;
-				int capturedPieceIndex = pieceToInt(move.captured);
+				int capturedPieceIndex = GetPieceType(move.captured);
 				inital ^= pieceKeys[color][capturedPieceIndex][finalposition];
 			}
 

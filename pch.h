@@ -23,6 +23,7 @@
 #include "framework.h"
 #include "minimax.h"
 #include "Move.h"
+#include "movement.h"
 #include "generator.h"
 #include "Piece.h"
 #include "Position.h"

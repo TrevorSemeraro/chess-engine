@@ -60,6 +60,9 @@
     <ClInclude Include="generator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="movement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="chess-engine.cpp">
@@ -94,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="zobrist.cpp">
       <Filter>Source Files\Board\Zobrist</Filter>
+    </ClCompile>
+    <ClCompile Include="movement.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
