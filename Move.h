@@ -8,6 +8,16 @@
 
 namespace Board
 {
+    namespace Castle {
+        enum CastleType {
+            None = 0,
+            Kingside = 1,
+            Queenside = 2,
+            Both = 3
+        };
+    }
+
+
     struct Move {
         char piece;
         
@@ -23,7 +33,7 @@ namespace Board
         bool enPassant = false;
 
         // 0 = no castle, 1 = kingside castle, 2 = queenside castle
-        int castle = 0;
+        Castle::CastleType castle = Castle::CastleType::None;
     };
     void printMove(Move move);
 }

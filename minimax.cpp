@@ -46,7 +46,6 @@ namespace MoveGenerator
 
         std::cout << "Leaf count: " << leafCount << std::endl;
         std::cout << "Hit count: " << hitCount << std::endl;
-        std::cout << "Eval: " << evaluation << std::endl;
 
         return bestMove;
     }

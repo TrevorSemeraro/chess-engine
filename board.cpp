@@ -61,12 +61,19 @@ namespace Board
             }
             index++;
         }
-        movedPieceIndex = currentPieceIndex;
+        int movedPieceIndex = currentPieceIndex;
+        pieceIndexes.push_back(movedPieceIndex);
+
         Piece* currentPiece = &(*currentPieces)[currentPieceIndex];
 
         if (move.willCapture) {
             this->handleCapture(move, opposingPieces, isWhitePiece);
         }
+        else {
+            capturedPieceIndexes.push_back(-1);
+            capturedPieces.push_back(Piece());
+        }
+
         if (isCastling) {
             this->handleCastle(move, currentPieces, isWhitePiece, print);
         }
@@ -142,6 +149,7 @@ namespace Board
         try{
             if(print)
                 std::cout << "There are " << this->moves.size() << " moves" << std::endl;
+
             this->moves.push_back(move);
         }
         catch (...) {
@@ -174,6 +182,128 @@ namespace Board
         //std::cout << "New Zobrist Hash: " << this->zobristKey << std::endl;
     }
 
+    void Board::undoMove(Move move) {
+        if (numberOfMoves == 0) {
+            std::cout << "No moves to undo" << std::endl;
+            return;
+        }
+
+        numberOfMoves--;
+        this->whiteTurn = !this->whiteTurn;
+
+        this->moves.pop_back();
+
+        int movedPieceIndex = pieceIndexes.back();
+        pieceIndexes.pop_back();
+
+        int capturedPieceIndex = capturedPieceIndexes.back();
+        capturedPieceIndexes.pop_back();
+
+        int movedFrom = PositionToIndex(move.initalPosition.row, move.initalPosition.col);
+        int movedTo = PositionToIndex(move.finalPosition.row, move.finalPosition.col);
+
+        bool undoEnpassant = move.enPassant;
+        bool undoPromotion = move.promotion != ' ';
+        bool undoCapture = capturedPieceIndex != -1;
+        bool undoCastle = move.castle != Castle::CastleType::None;
+        bool isWhitePiece = isupper(move.piece) > 0;
+
+        Piece capturedPiece = capturedPieces.back();
+        capturedPieces.pop_back();
+
+        char piece = move.piece;
+        bool isKingMovement = tolower(piece) == 'k';
+
+        Piece(*currentPieces)[16] = this->whiteTurn ? &this->white_pieces : &this->black_pieces;
+        
+        if (movedPieceIndex != -1) {
+            Piece& movedPiece = (*currentPieces)[movedPieceIndex];
+
+            movedPiece.position = move.initalPosition;
+        }
+        else {
+            throw new std::runtime_error("Moved piece not found");
+        }
+
+        this->board[movedFrom] = piece;
+        this->board[movedTo] = ' ';
+
+        if (undoCastle) {
+            uint8_t castleRow = isWhitePiece ? 7 : 0;
+
+            Position finalRookPosition;
+            Position startingRookPosition;
+
+            if (move.castle == 1) {
+                finalRookPosition = Position{ castleRow, 5 };
+
+                startingRookPosition = Position{ castleRow, 7 };
+            }
+            // queenside castle
+            else {
+                finalRookPosition = Position{ castleRow, 3 };
+
+                startingRookPosition = Position{ castleRow, 0 };
+            }
+
+            for (Piece& p : *currentPieces)
+            {
+                char type = tolower(p.type);
+
+                if (type == 'r' && p.position == finalRookPosition) {
+                    this->board[PositionToIndex(finalRookPosition)] = ' ';
+                    this->board[PositionToIndex(startingRookPosition)] = isWhitePiece ? 'R' : 'r';
+                    p.position = startingRookPosition;
+                }
+            }
+
+            if(this->whiteTurn) {
+                if (move.castle == Castle::CastleType::Kingside) {
+                    this->canWhiteCastleKing = true;
+                }
+                else {
+			    	this->canWhiteCastleQueen = true;
+                }
+			}
+			else {
+                if (move.castle == Castle::CastleType::Kingside) {
+				    this->canBlackCastleKing = true;
+                }
+                else {
+				    this->canBlackCastleQueen = true;
+                }
+			}
+        }
+
+        if (undoPromotion) {
+
+        }
+
+        if (undoCapture) {
+            if (undoEnpassant) {
+                // white pawns are moving in the negative direction
+                uint8_t enpassantRow = this->whiteTurn ? move.finalPosition.row + 1 : move.finalPosition.row - 1;
+
+                Position enpassantPosition = { enpassantRow, move.finalPosition.col };
+
+                //this->board[PositionToIndex(enpassantPosition)] = move.captured;
+                return;
+            }
+
+            if (capturedPieceIndex != -1) {
+                Piece(*opposingPieces)[16] = this->whiteTurn ? &this->black_pieces : &this->white_pieces;
+                (*opposingPieces)[capturedPieceIndex] = capturedPiece;
+            }
+            else {
+                throw new std::runtime_error("Captured piece not found");
+            }
+        }
+
+        // Print the board to make sure it lines up with the UI
+        this->print();
+
+    }
+
     void Board::handleCastle(Move& move, Piece(*currentPieces)[16], bool isWhitePiece, bool print) {
         // kingside castle
         if (print) {
@@ -186,7 +316,7 @@ namespace Board
         Position rookPosition;
         Position startingRookPosition;
 
-        if (move.castle == 1) {
+        if (move.castle == Castle::CastleType::Kingside) {
             kingPosition = Position{ castleRow, 6 };
             rookPosition = Position{ castleRow, 5 };
 
@@ -215,63 +345,20 @@ namespace Board
         }
 
         if (isWhitePiece) {
-            this->canWhiteCastleKing = false;
-            this->canWhiteCastleQueen = false;
+            if(move.castle == Castle::CastleType::Kingside)
+                this->canWhiteCastleKing = false;
+			else
+                this->canWhiteCastleQueen = false;
         }
         else {
-            this->canBlackCastleKing = false;
-            this->canBlackCastleQueen = false;
+            if (move.castle == Castle::CastleType::Kingside)
+                this->canBlackCastleKing = false;
+            else
+                this->canBlackCastleQueen = false;
         }
     }
 
-    void Board::undoMove(Move move) {
-        this->whiteTurn = !this->whiteTurn;
-
-        int movedFrom = PositionToIndex(move.initalPosition.row, move.initalPosition.col);
-        int movedTo = PositionToIndex(move.finalPosition.row, move.finalPosition.col);
-
-        bool undoEnpassant = move.enPassant;
-        bool undoPromotion = move.promotion != ' ';
-        bool undoCapture = move.willCapture;
-        
-        char piece = move.piece;
-        bool isKingMovement = tolower(piece) == 'k';
-
-        if (movedPieceIndex != -1) {
-            Piece(*currentPieces)[16] = this->whiteTurn ? &this->white_pieces : &this->black_pieces;
-            Piece movedPiece = (*currentPieces)[movedPieceIndex];
-
-            movedPiece.position = move.initalPosition;
-        }
-        else {
-            throw new std::runtime_error("Moved piece not found");
-        }
-
-        this->board[PositionToIndex(move.initalPosition)] = piece;
-        this->board[PositionToIndex(move.finalPosition)] = ' ';
-
-        if(undoEnpassant) {
-		}
-
-
-        if (undoPromotion) {
-            
-        }
-
-        if (undoCapture) {
-            if (capturedPieceIndex != -1) {
-                this->board[PositionToIndex(move.finalPosition)] = capturedPiece.type;
-                
-                Piece(*opposingPieces)[16] = this->whiteTurn ? &this->black_pieces : &this->white_pieces;
-				(*opposingPieces)[capturedPieceIndex] = capturedPiece;
-            }
-            else {
-                throw new std::runtime_error("Captured piece not found");
-            }
-        }
-
-
-    }
+    
 
     void Board::handlePromotion(Move& move, Piece(*currentPieces)[16], int currentPieceIndex, bool isWhitePiece, bool print) {
         int pawnFinalRow = isWhitePiece ? 0 : 7;
@@ -298,24 +385,28 @@ namespace Board
             uint8_t enpassantRow = isWhitePiece ? move.finalPosition.row + 1 : move.finalPosition.row - 1;
 
             capturePosition = { enpassantRow, move.finalPosition.col };
+
+            this->board[PositionToIndex(capturePosition)] = ' ';
         }
 
         // we are going to capture (remove) any opposing piece on the final positions square
-        for (int i = 0; i < 16; i++)
+        int i = 0;
+        for (Piece& opposingPiece : *opposingPieces)
         {
-            Piece& opposingPiece = *opposingPieces[i];
-            capturedPieceIndex = i;
-
             if (opposingPiece.position == capturePosition)
             {
+                int capturedPieceIndex = i;
+                capturedPieceIndexes.push_back(capturedPieceIndex);
+
+                capturedPieces.push_back(opposingPiece);
+
                 opposingPiece.type = ' ';
                 opposingPiece.position = { 0, 0 };
 
                 break;
             }
+            i++;
         }
-
-        this->board[PositionToIndex(capturePosition)] = ' ';
     }
 
     void Board::flipTimer() {

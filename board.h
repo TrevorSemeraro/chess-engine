@@ -31,6 +31,10 @@ namespace Board
         uint64_t zobristKey = 0;
 
         std::vector<Move> moves = {};
+        std::vector<int> pieceIndexes = {};
+        std::vector<int> capturedPieceIndexes = {};
+        std::vector<Piece> capturedPieces = {};
+
         int numberOfMoves = 0;
 
         double currentEvaluation = 0;
@@ -39,9 +43,6 @@ namespace Board
         Piece black_pieces[16] = {};
         
         // the follow are used so we can undo moves
-        Piece capturedPiece = {};
-        int capturedPieceIndex = -1;
-        int movedPieceIndex = -1;
 
         CustomTimer whiteTimer;
         CustomTimer blackTimer;
@@ -94,11 +95,15 @@ namespace Board
         // Destructor
         ~Board();
 
+        //bool whiteCastle = Castle::CastleType::Both;
+        //bool blackCastle = Castle::CastleType::Both;
+
         bool canWhiteCastleKing = false;
         bool canWhiteCastleQueen = false;
 
         bool canBlackCastleKing = false;
         bool canBlackCastleQueen = false;
+
     };
 }
 

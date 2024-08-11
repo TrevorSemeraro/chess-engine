@@ -215,12 +215,12 @@ namespace MoveGenerator
 
                     if (board.board[position] == ' ')
                     {
-                        Board::Move move = { piece.type, piece.position, newPosition, false, ' ', ' ', false, 0};
+                        Board::Move move = { piece.type, piece.position, newPosition, false, ' ', ' ', false, Board::Castle::CastleType::None};
                         moves.push_back(move);
                     }
                     if (isWhitePiece != piece.white)
                     {
-                        Board::Move move = { piece.type, piece.position, newPosition, true, board.board[position], ' ', false, 0};
+                        Board::Move move = { piece.type, piece.position, newPosition, true, board.board[position], ' ', false, Board::Castle::CastleType::None };
                         moves.push_back(move);
                     }
                 }
@@ -229,38 +229,43 @@ namespace MoveGenerator
 
         // if we are in check, disable castling
         if(inCheck) return;
+        
+        int row = piece.white ? 7 : 0;
+        Board::Position necessaryKingPosition = { row, 4 };
+        
+        bool kingInPosition = piece.position == necessaryKingPosition;
+        if (!kingInPosition) return;
 
         if (piece.white) {
-            bool isKingsideOpen = (board.board[Board::PositionToIndex(7, 5)] == ' ') && (board.board[Board::PositionToIndex(7, 6)] == ' ');
-            bool isQueensideOpen = (board.board[Board::PositionToIndex(7, 1)] == ' ') && 
-                (board.board[Board::PositionToIndex(7, 2)] == ' ') && 
-                (board.board[Board::PositionToIndex(7, 3)] == ' ');
+
+            bool isKingsideOpen = (board.board[Board::PositionToIndex(row, 5)] == ' ') && (board.board[Board::PositionToIndex(row, 6)] == ' ');
+            bool isQueensideOpen = (board.board[Board::PositionToIndex(row, 1)] == ' ') && (board.board[Board::PositionToIndex(row, 2)] == ' ') && (board.board[Board::PositionToIndex(row, 3)] == ' ');
 
             if(board.canWhiteCastleKing && isKingsideOpen)
 			{
-                Board::Move move = { piece.type, piece.position, {7, 6}, false, ' ', ' ', false, 1 };
+                Board::Move move = { piece.type, piece.position, {row, 6}, false, ' ', ' ', false, Board::Castle::CastleType::Kingside };
 				moves.push_back(move);
 			}
 
             if (board.canWhiteCastleQueen && isQueensideOpen)
             {
-                Board::Move move = { piece.type, piece.position, {7, 2}, false, ' ', ' ', false, 2 };
+                Board::Move move = { piece.type, piece.position, {row, 2}, false, ' ', ' ', false, Board::Castle::CastleType::Queenside };
                 moves.push_back(move);
             }
         }
         else {
-            bool isKingsideOpen = board.board[Board::PositionToIndex(0, 5)] == ' ' && board.board[Board::PositionToIndex(0, 6)] == ' ';
-            bool isQueensideOpen = board.board[Board::PositionToIndex(0, 1)] == ' ' && board.board[Board::PositionToIndex(0, 2)] == ' ' && board.board[Board::PositionToIndex(0, 3)] == ' ';
+            bool isKingsideOpen = board.board[Board::PositionToIndex(row, 5)] == ' ' && board.board[Board::PositionToIndex(row, 6)] == ' ';
+            bool isQueensideOpen = board.board[Board::PositionToIndex(row, 1)] == ' ' && board.board[Board::PositionToIndex(row, 2)] == ' ' && board.board[Board::PositionToIndex(row, 3)] == ' ';
 
             if (board.canBlackCastleKing && isKingsideOpen)
             {
-                Board::Move move = { piece.type, piece.position, {0, 6}, false, ' ', ' ', false, 1 };
+                Board::Move move = { piece.type, piece.position, {row, 6}, false, ' ', ' ', false, Board::Castle::CastleType::Kingside };
                 moves.push_back(move);
             }
 
             if (board.canBlackCastleQueen && isQueensideOpen)
             {
-                Board::Move move = { piece.type, piece.position, {0, 2}, false, ' ', ' ', false, 2 };
+                Board::Move move = { piece.type, piece.position, {row, 2}, false, ' ', ' ', false, Board::Castle::CastleType::Queenside };
                 moves.push_back(move);
             }
         }
