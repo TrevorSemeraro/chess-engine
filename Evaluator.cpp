@@ -122,7 +122,10 @@ namespace Evaluate
 
 	int evaluateBoard(Board::Board& board)
 	{
-		int score = 0;
+		int whiteScore = 0;
+		int blackScore = 0;
+
+		int negamaxMultiplier = board.whiteTurn ? 1 : -1;
 
 		if(board.gameState == Board::GameState::Checkmate)
 		{
@@ -135,48 +138,42 @@ namespace Evaluate
 				return -1,000,000;
 			}
 		}
+
 		else if(board.gameState == Board::GameState::Draw)
 		{
-			return -100;
+			return 0;
 		}
 
-		score += MaterialScore(board);
-		score += PieceSquareScore(board);
+		whiteScore += MaterialScore(board, true);
+		whiteScore += PieceSquareScore(board, true);
 
-		int negamaxMultiplier = board.whiteTurn ? 1 : -1;
+		blackScore += MaterialScore(board, false);
+		blackScore += PieceSquareScore(board, false);
 
-		return score;
+		int score = whiteScore - blackScore;
+
+		return score * negamaxMultiplier;
 	}
 
-	int MaterialScore(Board::Board& board) {
+	int MaterialScore(Board::Board& board, bool white) {
 		int score = 0;
-
-		for (Board::Piece& p : board.white_pieces)
+		auto pieces = white ? &board.white_pieces : &board.black_pieces;
+		for (Board::Piece& p : *pieces)
 		{
 			const int value = Board::pieceValues.at(p.type);
 			score += value;
 		}
 
-		for (Board::Piece& p : board.black_pieces)
-		{
-			const int value = Board::pieceValues.at(p.type);
-			score += value;
-		}
-
 		return score;
 	}
 
-	int PieceSquareScore(Board::Board& board) {
+	int PieceSquareScore(Board::Board& board, bool white) {
 		int score = 0;
+		auto pieces = white ? &board.white_pieces : &board.black_pieces;
 
-		for (Board::Piece& p : board.white_pieces)
+		for (Board::Piece& p : *pieces)
 		{
-			score += GetValue(p.type, p.position, true);
-		}
-
-		for (Board::Piece& p : board.black_pieces)
-		{
-			score -= GetValue(p.type, p.position, false);
+			score += GetValue(p.type, p.position, white);
 		}
 
 		return score;

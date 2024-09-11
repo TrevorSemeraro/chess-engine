@@ -188,7 +188,7 @@ namespace MoveGenerator
         }
     }
 
-    void getKingMoves(Board::Piece& piece, Board::Board& board, std::vector<Board::Move>& moves, Board::Piece* attacker) {
+    void getKingMoves(Board::Piece& piece, Board::Board& board, std::vector<Board::Move>& validMoves, Board::Piece* attacker) {
         bool inCheck = (attacker != nullptr);
 
         for (uint8_t x = 0; x < 3; x++)
@@ -216,12 +216,12 @@ namespace MoveGenerator
                     if (board.board[position] == ' ')
                     {
                         Board::Move move = { piece.type, piece.position, newPosition, false, ' ', ' ', false, Board::Castle::CastleType::None};
-                        moves.push_back(move);
+                        validMoves.push_back(move);
                     }
                     if (isWhitePiece != piece.white)
                     {
                         Board::Move move = { piece.type, piece.position, newPosition, true, board.board[position], ' ', false, Board::Castle::CastleType::None };
-                        moves.push_back(move);
+                        validMoves.push_back(move);
                     }
                 }
             }
@@ -244,13 +244,13 @@ namespace MoveGenerator
             if(board.canWhiteCastleKing && isKingsideOpen)
 			{
                 Board::Move move = { piece.type, piece.position, {row, 6}, false, ' ', ' ', false, Board::Castle::CastleType::Kingside };
-				moves.push_back(move);
+                validMoves.push_back(move);
 			}
 
             if (board.canWhiteCastleQueen && isQueensideOpen)
             {
                 Board::Move move = { piece.type, piece.position, {row, 2}, false, ' ', ' ', false, Board::Castle::CastleType::Queenside };
-                moves.push_back(move);
+                validMoves.push_back(move);
             }
         }
         else {
@@ -260,13 +260,13 @@ namespace MoveGenerator
             if (board.canBlackCastleKing && isKingsideOpen)
             {
                 Board::Move move = { piece.type, piece.position, {row, 6}, false, ' ', ' ', false, Board::Castle::CastleType::Kingside };
-                moves.push_back(move);
+                validMoves.push_back(move);
             }
 
             if (board.canBlackCastleQueen && isQueensideOpen)
             {
                 Board::Move move = { piece.type, piece.position, {row, 2}, false, ' ', ' ', false, Board::Castle::CastleType::Queenside };
-                moves.push_back(move);
+                validMoves.push_back(move);
             }
         }
     }
@@ -462,9 +462,9 @@ namespace MoveGenerator
         }
 
         // enpassant
-        if (!piece.isPinned && board.moves.size() > 0)
+        if (!piece.isPinned && board.pastMoves.size() > 0)
         {
-            Board::Move lastMove = board.moves.back();
+            Board::Move lastMove = board.pastMoves.back();
             char lastPiece = tolower(lastMove.piece);
             
             bool lastMovePawn = lastPiece == 'p';
@@ -617,7 +617,7 @@ namespace MoveGenerator
                     }
                     catch (...) {
                         std::cout << "Error getting piece at position " << +newPosition.row << ", " << +newPosition.col << std::endl;
-                        for (Board::Move& move : board.moves) {
+                        for (Board::Move& move : board.pastMoves) {
                             printMove(move);
                         }
                     }

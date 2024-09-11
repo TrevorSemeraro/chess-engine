@@ -62,12 +62,12 @@ namespace Board
 		{'B', BISHOP_VALUE},
 		{'Q', QUEEN_VALUE},
 		{'K', KING_VALUE},
-		{'p', -PAWN_VALUE},
-		{'r', -ROOK_VALUE},
-		{'n', -KNIGHT_VALUE},
-		{'b', -BISHOP_VALUE},
-		{'q', -QUEEN_VALUE},
-		{'k', -KING_VALUE},
+		{'p', PAWN_VALUE},
+		{'r', ROOK_VALUE},
+		{'n', KNIGHT_VALUE},
+		{'b', BISHOP_VALUE},
+		{'q', QUEEN_VALUE},
+		{'k', KING_VALUE},
 		{' ', 0}
 	};
 

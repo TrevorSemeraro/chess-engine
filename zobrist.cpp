@@ -158,7 +158,7 @@ namespace Board
 			return inital;
 		}
 
-		void StoreState(uint64_t state, MoveScore score)
+		void StoreState(uint64_t state, MoveScore score, int playsRemaining, int beta, int playsFromRoot, Flag bound)
 		{
 			transpositionTable[state] = score;
 		}

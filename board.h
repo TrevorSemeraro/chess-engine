@@ -30,7 +30,7 @@ namespace Board
 
         uint64_t zobristKey = 0;
 
-        std::vector<Move> moves = {};
+        std::vector<Move> pastMoves = {};
         std::vector<int> pieceIndexes = {};
         std::vector<int> capturedPieceIndexes = {};
         std::vector<Piece> capturedPieces = {};

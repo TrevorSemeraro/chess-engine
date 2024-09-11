@@ -43,7 +43,7 @@ namespace Board
 		uint64_t generateHash(Board& board);
 		uint64_t updateHash(Board& board, Move& move);
 
-		void StoreState(uint64_t state, MoveScore score);
+		void StoreState(uint64_t state, MoveScore score, int playsRemaining, int beta, int playsFromRoot, Flag bound);
 
 		MoveScore GetState(uint64_t state, int playsRemaining, int playsFromRoot, int alpha, int beta);
 	}

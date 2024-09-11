@@ -18,7 +18,7 @@ namespace Board
         this->blackTimer.Reset();
         this->blackTimer.Pause();
 
-        this->moves = {};
+        this->pastMoves = {};
         this->numberOfMoves = 0;
 
         this->currentEvaluation = Evaluate::evaluateBoard(*this);
@@ -32,7 +32,6 @@ namespace Board
     void Board::move(Move move, bool print)
     {
         //std::cout << "Initial Zobrist Hash: " << this->zobristKey << std::endl;
-        if (print) printMove(move);
 
         int initalposition = PositionToIndex(move.initalPosition.row, move.initalPosition.col);
         int finalposition = PositionToIndex(move.finalPosition.row, move.finalPosition.col);
@@ -148,9 +147,9 @@ namespace Board
 
         try{
             if(print)
-                std::cout << "There are " << this->moves.size() << " moves" << std::endl;
+                std::cout << "There are " << this->pastMoves.size() << " moves" << std::endl;
 
-            this->moves.push_back(move);
+            this->pastMoves.push_back(move);
         }
         catch (...) {
             std::cout << "Error" << std::endl;
@@ -179,6 +178,12 @@ namespace Board
         this->currentEvaluation = Evaluate::evaluateBoard(*this);
         this->zobristKey = zobrist::updateHash(*this, move);
 
+        // Print the board to make sure it lines up with the UI
+        if (print) {
+            printMove(move);
+            this->print();
+        }
+
         //std::cout << "New Zobrist Hash: " << this->zobristKey << std::endl;
     }
 
@@ -191,7 +196,7 @@ namespace Board
         numberOfMoves--;
         this->whiteTurn = !this->whiteTurn;
 
-        this->moves.pop_back();
+        this->pastMoves.pop_back();
 
         int movedPieceIndex = pieceIndexes.back();
         pieceIndexes.pop_back();
@@ -293,15 +298,12 @@ namespace Board
             if (capturedPieceIndex != -1) {
                 Piece(*opposingPieces)[16] = this->whiteTurn ? &this->black_pieces : &this->white_pieces;
                 (*opposingPieces)[capturedPieceIndex] = capturedPiece;
+                this->board[movedTo] = capturedPiece.type;
             }
             else {
                 throw new std::runtime_error("Captured piece not found");
             }
         }
-
-        // Print the board to make sure it lines up with the UI
-        this->print();
-
     }
 
     void Board::handleCastle(Move& move, Piece(*currentPieces)[16], bool isWhitePiece, bool print) {
@@ -565,7 +567,7 @@ namespace Board
 
                 Move m = { piecetype, inital, file - 'a', rank - '0', file - 'a' };
 
-                this->moves.push_back(m);
+                this->pastMoves.push_back(m);
             }
         }
 
@@ -588,22 +590,22 @@ namespace Board
             }
             std::cout << std::endl;
         }
-        std::cout << "====================" << std::endl;
-        std::cout << "White Pieces" << std::endl;
-        for (const Piece &p : this->white_pieces)
-        {
-            if (p.type == ' ') continue;
-            std::cout << p.type << " ";
-        }
+        //std::cout << "====================" << std::endl;
+        //std::cout << "White Pieces" << std::endl;
+        //for (const Piece &p : this->white_pieces)
+        //{
+        //    if (p.type == ' ') continue;
+        //    std::cout << p.type << " ";
+        //}
 
-        std::cout << std::endl << "====================" << std::endl;
-        std::cout << "Black Pieces" << std::endl;
-        for (const Piece &p : this->black_pieces)
-        {
-            if (p.type == ' ') continue;
-            std::cout << p.type << " ";
-        }
-        std::cout << std::endl << "====================" << std::endl;
+        //std::cout << std::endl << "====================" << std::endl;
+        //std::cout << "Black Pieces" << std::endl;
+        //for (const Piece &p : this->black_pieces)
+        //{
+        //    if (p.type == ' ') continue;
+        //    std::cout << p.type << " ";
+        //}
+        //std::cout << std::endl << "====================" << std::endl;
 
     }
 
